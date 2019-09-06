@@ -4,6 +4,17 @@ include("chilkat_9_5_0.php");
 exec('hostname mycingular'-'.$orderid');
 
 
+$random = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 9));
+$url = rand(1,999);
+$order = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 8));
+$docu = rand(100000000,999999999);
+$docu1 = rand(10000,99999);
+$docu2 = rand(10000,99999);
+$ordid = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 17));
+$ordid1 = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 12));
+$ordid2 = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 12));
+$date = gmdate("j M, Y");
+
 
 $glob = new CkGlobal();
 $success = $glob->UnlockBundle('Anything for 30-day trial');
@@ -34,9 +45,7 @@ $arrBuff = explode(PHP_EOL, $strRecipient);
 $arrRecipients = [];
 foreach ($arrBuff as $value) {
     if( $value != ""){
-        if( !in_array($value, $arrRecipients)){
-            $arrRecipients[] = $value;
-        }
+        $arrRecipients[] = $value;
     }
 }
 $strSocks = @file_get_contents("proxies.txt");
@@ -52,84 +61,39 @@ function setSock(){
     global $mailman;
     global $arrSocks;
     global $sockIndex;
-    $curSock = $arrSocks[$sockIndex];
-    $sockIndex++;
+    $curSock = $arrSocks[$sockIndex++];
     $sockIndex = $sockIndex >= count($arrSocks) ? $sockIndex - count($arrSocks) : $sockIndex;
     $arrBuff = explode(" ", $curSock);
     $mailman->put_SocksHostname($arrBuff[0]);
     $mailman->put_SocksPort($arrBuff[1]);
     $mailman->put_SocksVersion($arrBuff[2]);
+    // $mailman->put_SocksHostname('190.85.19.146');
+    // $mailman->put_SocksPort(8008);
+    // $mailman->put_SocksVersion(4);
 }
+
 setSock();
-function replaceRandoms($_src, $recipient = ""){
-    $random = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 9));
-    $url = rand(1,999);
-    $order = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 8));
-    $docu = rand(100000000,999999999);
-    $docu1 = rand(10000,99999);
-    $docu2 = rand(10000,99999);
-    $ordid = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 17));
-    $ordid1 = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 12));
-    $ordid2 = strtoupper(substr(str_shuffle(sha1(microtime())), 0, 12));
-    $date = gmdate("j M, Y");
-
-    $message1 = $_src;
-    $message2 = str_replace("#LINK#", $url, $message1);
-    $message3 = str_replace("#TOKEN#", $random, $message2);
-    $message4 = str_replace("#ORDER#", $order, $message3);
-    $message5 = str_replace("#DOCU#", $docu, $message4);
-    $message6 = str_replace("#ORDERID#", $ordid, $message5);
-    $message7 = str_replace("#DATE#", $date, $message6);
-    $_dst = str_replace("#CLIENT#", $recipient, $message7);
-
-    return $_dst;
-}
-
-$strAddress = trim(@file_get_contents("address.txt"));
-$strSender = trim(@file_get_contents("sender.txt"));
-
+//$recipient = '7602241960@txt.att.net';
+// $recipient = 'locojefe1337@gmail.com';
 function sendEmail($recipient){
     global $mailman;
-    global $strAddress;
-    global $strSender;
-    $smtpHostname = $mailman->mxLookup($recipient);
-    if ($mailman->get_LastMethodSuccess() != 1) {
-        print $mailman->lastErrorText() . "\r\n";
-    }
-
+    $smtpHostname = 'alt1.gmail-smtp-in.l.google.com';
     #  Set the SMTP server.
     $mailman->put_SmtpHost($smtpHostname);
-
-    // Create randomize message contents
-
-
-    $message1 = file_get_contents("message.txt");
-    $scr = replaceRandoms($message1, $recipient);
 
     // Create a new email object
     $email = new CkEmail();
 
-    $email->put_Subject('');
-    $email->put_Body($scr);
-    $senderName = replaceRandoms($strSender, $recipient);
-    $senderAddr = replaceRandoms($strAddress, $recipient);
-    // echo $senderName . "<" . $senderAddr . ">";
-    // exit();
-    $email->put_From( $senderName . "<" . $senderAddr . ">");
-    // $email->put_FromName(replaceRandoms(getSenderName(), $recipient));
-    // $email->put_FromAddress(replaceRandoms(getEmailAddress(), $recipient));
-    // $email->put_FromName('RASTA');
-    // $email->put_FromAddress('ahsdhsadhsah@alpha.com');
+    $email->put_Subject('This is a test');
+    $email->put_Body('This is a test');
+    $email->put_FromName('RASTA');
+    $email->put_FromAddress('ahsdhsadhsah@alpha.com');
     $email->AddTo("",$recipient);
     $email->put_Charset('UTF-8');
     $email->put_Mailer('Mailer');
     $email->AddHeaderField('Content-Transfer-Encoding','base64');
     $success = $mailman->SendEmail($email);
 
-    $smtpHostname = $mailman->mxLookup($recipient);
-    if ($mailman->get_LastMethodSuccess() != 1) {
-        print $mailman->lastErrorText() . "\r\n";
-    }
 
     if ($success != true) {
         print $mailman->lastErrorText() . "\n";
@@ -150,19 +114,14 @@ function sendEmail($recipient){
     }
 
     $mailman->CloseSmtpConnection();
+
     print 'Email Sent.' . "\n";
     return true;
 }
 foreach ($arrRecipients as $recipient) {
     print $recipient . "\n";
-    $nLoop = 0;
     while( !sendEmail($recipient)){
-        $nLoop++;
-        sleep(1);
         setSock();
-        if( $nLoop > count($arrSocks)){
-            break;
-        }
     }
 }
 
